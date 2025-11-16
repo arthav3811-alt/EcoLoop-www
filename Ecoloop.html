@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EcoLoop — Scan. Reuse. Repeat.</title>
+  <meta name="description" content="EcoLoop prototype: scan items, AI suggestions, matches, pickup booking and rewards. Deployable single-file site."/>
+  <style>
+    :root{--green:#1fa67a;--dark:#0b2b21;--muted:#6b7280;--glass:rgba(255,255,255,0.9)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:#f5fbf7;color:var(--dark);-webkit-font-smoothing:antialiased}
+    header{position:sticky;top:0;background:#fff;display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #e9f3ee;z-index:40}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo-ico{width:44px;height:44px;border-radius:44px;background:linear-gradient(135deg,var(--green),#00c07a);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+    h1{margin:0;font-size:18px}
+    .tag{font-size:12px;color:var(--muted)}
+    nav a{margin-left:12px;text-decoration:none;color:var(--dark);font-weight:600}
+    main{max-width:1100px;margin:20px auto;padding:12px}
+
+    /* HERO */
+    .hero{display:grid;grid-template-columns:1fr 420px;gap:22px;align-items:start}
+    .card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 8px 30px rgba(10,20,15,0.03)}
+    .lead{font-size:20px;color:var(--dark);margin:0 0 8px}
+    .muted{color:var(--muted);font-size:14px}
+    .btn{background:var(--green);color:#fff;border:0;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    .btn-ghost{background:transparent;border:1px solid #e9f3ee;padding:10px 14px;border-radius:10px;cursor:pointer}
+
+    /* phone mockup */
+    .phone{width:100%;max-width:420px;border-radius:22px;border:1px solid #e6f2ee;padding:16px;background:linear-gradient(180deg,#ffffff,#f7fffb)}
+    .mock-screen{height:640px;border-radius:14px;background:linear-gradient(180deg,#f7fff9,#ffffff);display:flex;flex-direction:column;padding:14px}
+
+    /* grid for features */
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+    .feature{padding:12px;background:linear-gradient(180deg,#fff,#fbfff8);border-radius:12px}
+
+    /* sections */
+    section{margin-top:18px}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+    /* scan area */
+    #uploadPreview{width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1px dashed #e6f6ee;display:none}
+    .uploader{display:flex;gap:10px;align-items:center}
+    input[type=file]{display:none}
+    .filelabel{padding:10px 12px;border-radius:10px;border:1px dashed #e3efe6;cursor:pointer}
+
+    .ai-box{display:none;margin-top:12px;padding:12px;background:linear-gradient(90deg,rgba(31,166,122,0.06),rgba(31,166,122,0.03));border-radius:10px;border:1px solid rgba(31,166,122,0.06)}
+    .ai-choice{display:flex;gap:8px;margin-top:10px}
+    .choice{flex:1;padding:10px;border-radius:10px;background:#fff;border:1px solid #eaf6ef;text-align:center;cursor:pointer}
+
+    /* matches list */
+    .match{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;border:1px solid #eef9f0}
+    .avatar{width:56px;height:56px;border-radius:10px;background:#eefbf4;display:flex;align-items:center;justify-content:center}
+
+    /* pickup form */
+    label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+    input[type=text],input[type=tel],textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e9f3ee;margin-top:6px}
+
+    /* rewards */
+    .rewards{display:flex;gap:12px;align-items:center}
+    .points{font-weight:800;font-size:28px;color:var(--green)}
+
+    /* bottom nav */
+    .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#fff;border-radius:40px;padding:8px 12px;display:flex;gap:12px;box-shadow:0 10px 30px rgba(10,20,10,0.08)}
+    .bbtn{background:transparent;border:0;padding:8px 10px;border-radius:12px;cursor:pointer}
+    .bbtn.active{background:linear-gradient(90deg,var(--green),#00c07a);color:#fff}
+
+    /* small devices */
+    @media(max-width:960px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:repeat(1,1fr)}.cols{grid-template-columns:1fr}.phone{max-width:100%}}
+  </style>
+<style>
+body.dark{background:#121212;color:#f0f0f0;}
+.dark .card{background:#1e1e1e;color:#f0f0f0;}
+.toggle-btn{position:fixed;top:15px;right:15px;cursor:pointer;padding:8px 14px;border-radius:20px;background:#e0e0e0;}
+body.dark .toggle-btn{background:#333;color:#fff;}
+</style>
+</head>
+<body>
+<div class="toggle-btn" onclick="toggleTheme()">🌙</div>>
+  <header>
+    <div class="brand">
+      <div class="logo-ico">EL</div>
+      <div>
+        <div style="font-weight:800">EcoLoop</div>
+        <div class="tag">"Why throw it away? Fix it. Rent it. Resell it."</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#scan">Scan</a>
+      <a href="#matches">Matches</a>
+      <a href="#rewards">Rewards</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="card">
+        <p class="lead">EcoLoop — The future of waste-free living</p>
+        <p class="muted">Snap a photo, get instant AI-driven guidance to sell, donate or recycle — then book pickup and earn EcoPoints.</p>
+
+        <div class="grid" style="margin-top:14px">
+          <div class="feature"><strong>AI Suggestions</strong><div class="muted">Instant Sell / Donate / Recycle from a photo</div></div>
+          <div class="feature"><strong>Local Matches</strong><div class="muted">Buyers, repair shops, NGOs & recyclers nearby</div></div>
+          <div class="feature"><strong>Pickup & Rewards</strong><div class="muted">Schedule pickup and earn rewards</div></div>
+        </div>
+
+        <div style="margin-top:16px;display:flex;gap:10px">
+          <button class="btn" onclick="location.hash='#scan';document.getElementById('fileInput').click();">Start scanning</button>
+          <button class="btn-ghost" onclick="downloadSite()">Download HTML</button>
+        </div>
+
+        <div style="margin-top:12px" class="muted">Prototype timeline: 10–14 days for polished Figma screens; 20–30 days for functional FlutterFlow MVP.</div>
+      </div>
+
+      <aside class="phone card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong>App Preview</strong>
+          <small class="muted">Prototype</small>
+        </div>
+        <div class="mock-screen">
+          <div id="screenTop" style="display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:14px;font-weight:700">Scan an item</div>
+            <div style="font-size:12px;color:var(--muted)">Use camera or upload a photo</div>
+
+            <div style="margin-top:6px">
+              <label class="filelabel" for="fileInput">📷 Add photo</label>
+              <input id="fileInput" type="file" accept="image/*" onchange="previewImage(event)" />
+            </div>
+
+            <img id="uploadPreview" alt="preview" />
+
+            <div style="display:flex;gap:8px">
+              <button class="btn" onclick="runAIScan()">Analyze</button>
+              <button class="btn-ghost" onclick="openMatches()">See matches</button>
+            </div>
+
+            <div id="aiBox" class="ai-box" aria-live="polite">
+              <div style="font-weight:800">Suggested action: <span id="aiResult">—</span></div>
+              <div class="ai-choice">
+                <div class="choice" onclick="chooseAction('SELL')">Sell</div>
+                <div class="choice" onclick="chooseAction('DONATE')">Donate</div>
+                <div class="choice" onclick="chooseAction('RECYCLE')">Recycle</div>
+              </div>
+            </div>
+
+            <div style="margin-top:8px;font-size:12px;color:var(--muted)">Tip: First pickup is free during pilot.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Scan / Matches / Pickup / Rewards sections -->
+    <section id="scan" class="card">
+      <h2>Scan & AI Suggestion</h2>
+      <div class="cols">
+        <div>
+          <p class="muted">Upload an image (or take one on mobile). The prototype uses simple heuristics + fake AI to suggest the best reuse option. For production, integrate Google Vision or a custom model.</p>
+          <div style="margin-top:8px">
+            <label for="fileInputMain" class="filelabel">Upload item image</label>
+            <input id="fileInputMain" type="file" accept="image/*" onchange="previewImage(event);syncPreview()" />
+            <img id="uploadPreviewMain" style="display:none;margin-top:8px;border-radius:10px;max-height:260px;object-fit:contain;border:1px dashed #e6f6ee" />
+          </div>
+
+          <div style="margin-top:10px">
+            <label>Category</label>
+            <select id="categorySelect"><option>Clothing</option><option>Electronics</option><option>Plastic</option><option>Furniture</option><option>Other</option></select>
+            <label>Condition</label>
+            <select id="conditionSelect"><option>New</option><option>Good</option><option>Used</option><option>Damaged</option></select>
+          </div>
+
+          <div style="margin-top:12px">
+            <button class="btn" onclick="runAIScanMain()">Run AI Suggestion</button>
+            <button class="btn-ghost" onclick="clearScan()">Clear</button>
+          </div>
+
+          <div id="aiResultMain" class="ai-box" style="display:none;margin-top:12px"></div>
+        </div>
+
+        <div>
+          <h3>Live Match Preview</h3>
+          <div id="matchesList">
+            <!-- dynamic matches -->
+          </div>
+          <div style="margin-top:8px">
+            <button class="btn" onclick="openPickupForm()">Book pickup</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="matches" class="card">
+      <h2>Nearby Matches</h2>
+      <div style="margin-top:10px" id="mapHolder">
+        <!-- Simple OpenStreetMap iframe centered at sample location -->
+        <iframe id="osm" src="https://www.openstreetmap.org/export/embed.html?bbox=77.57%2C12.89%2C77.62%2C12.95&amp;layer=mapnik" style="width:100%;height:360px;border:1px solid #e9f3ee;border-radius:10px"></iframe>
+        <div class="muted" style="font-size:12px;margin-top:6px">Markers are mocked for prototype.</div>
+      </div>
+
+      <div style="margin-top:12px" id="matchCards"></div>
+    </section>
+
+    <section id="pickup" class="card">
+      <h2>Pickup Booking</h2>
+      <form id="pickupForm" onsubmit="event.preventDefault();handlePickup()">
+        <label>Name</label>
+        <input id="pName" type="text" required />
+        <label>Phone</label>
+        <input id="pPhone" type="tel" required />
+        <label>Address</label>
+        <textarea id="pAddress" rows="3" required></textarea>
+        <label>Pickup date & time</label>
+        <input id="pDate" type="datetime-local" required />
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn" type="submit">Confirm pickup</button>
+          <button class="btn-ghost" type="button" onclick="document.getElementById('pickupForm').reset()">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="rewards" class="card">
+      <h2>Your Rewards</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div>
+          <div class="muted">EcoPoints</div>
+          <div class="points" id="ecoPoints">0</div>
+          <div class="muted">CO₂ saved: <span id="co2">0</span> kg</div>
+        </div>
+        <div style="text-align:right">
+          <div class="muted">Badges</div>
+          <div id="badges" style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <button class="btn" onclick="redeemPoints()">Redeem EcoPoints (mock)</button>
+      </div>
+    </section>
+
+    <section id="contact" class="card">
+      <h2>Contact & Feedback</h2>
+      <form onsubmit="event.preventDefault();alert('Thanks — feedback received (mock).');">
+        <label>Name</label>
+        <input type="text" required />
+        <label>Email</label>
+        <input type="text" required />
+        <label>Message</label>
+        <textarea rows="4" required></textarea>
+        <div style="margin-top:8px"><button class="btn" type="submit">Send</button></div>
+      </form>
+    </section>
+
+  </main>
+
+  <div class="bottom-nav" role="navigation">
+    <button class="bbtn active" onclick="navTo('scan',this)">Scan</button>
+    <button class="bbtn" onclick="navTo('matches',this)">Matches</button>
+    <button class="bbtn" onclick="navTo('pickup',this)">Pickup</button>
+    <button class="bbtn" onclick="navTo('rewards',this)">Rewards</button>
+  </div>
+
+  <footer style="margin-top:40px;padding:24px;text-align:center;color:var(--muted)">© 2025 EcoLoop — Built for a waste-free future</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded',()=>{
+    // --- Utilities & state ---
+    const storedPts = safeGet('ecoPoints',0);
+    const storedCo = safeGet('co2',0);
+    window.state = {ecoPoints: Number(storedPts),co2:Number(storedCo)};
+    updateRewardsDisplay();
+    populateMatches('SELL');
+  });
+
+  function safeGet(key,defaultVal){ try{const v=localStorage.getItem(key);return v===null?defaultVal:JSON.parse(v)}catch(e){return defaultVal} }
+  function safeSet(key,val){ try{localStorage.setItem(key,JSON.stringify(val))}catch(e){console.warn('localStorage failed',e)} }
+
+  // --- Image preview (main + mini sync) ---
+  function previewImage(e){
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const url = URL.createObjectURL(f);
+    const p = document.getElementById('uploadPreview');
+    const p2 = document.getElementById('uploadPreviewMain');
+    if(p){p.src=url;p.style.display='block'}
+    if(p2){p2.src=url;p2.style.display='block'}
+    // remember last file name
+    window.state.lastFileName = f.name || '';
+  }
+  function syncPreview(){
+    const p = document.getElementById('uploadPreviewMain');
+    const p2 = document.getElementById('uploadPreview');
+    if(p && p2 && p.src){p2.src=p.src;p2.style.display='block'}
+  }
+
+  // --- Fake AI (quick heuristics) ---
+  function runAIScan(){
+    const csel = document.getElementById('categorySelect');
+    const condition = document.getElementById('conditionSelect')?document.getElementById('conditionSelect').value:'Good';
+    let weights = {SELL:1,DONATE:1,RECYCLE:1};
+    if(csel){
+      const cat = csel.value;
+      if(cat==='Clothing'){weights.SELL=2;weights.DONATE=3}
+      if(cat==='Electronics'){weights.SELL=4;weights.RECYCLE=2}
+      if(cat==='Plastic'){weights.RECYCLE=4}
+      if(condition==='Damaged'){weights.RECYCLE+=2;weights.SELL=0}
+    }
+    const pool = [];
+    Object.keys(weights).forEach(k=>{for(let i=0;i<weights[k];i++)pool.push(k)});
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    const aiResultEl = document.getElementById('aiResult'); if(aiResultEl) aiResultEl.innerText = pick;
+    const box = document.getElementById('aiBox'); if(box)box.style.display='block';
+    const main = document.getElementById('aiResultMain');
+    if(main){main.style.display='block';main.innerHTML=`<div style="font-weight:800">${pick}</div><div class=\"muted\">Recommendation based on category & condition (prototype)</div><div style=\"margin-top:10px\"><button class=\"btn\" onclick=\"openMatches()\">See matches</button> <button class=\"btn-ghost\" onclick=\"openPickupForm()\">Book pickup</button></div>`}
+    populateMatches(pick);
+  }
+  function runAIScanMain(){ runAIScan(); }
+  function chooseAction(a){ alert('You chose: '+a+' (mock). Opening pickup form.'); openPickupForm(); }
+  function clearScan(){ const img=document.getElementById('uploadPreviewMain'); if(img)img.style.display='none'; const res=document.getElementById('aiResultMain'); if(res)res.style.display='none'; }
+
+  // --- Matches (mock data) ---
+  const sampleMatches = [
+    {name:'ReHome Resale',type:'Buyer',dist:'2.1 km',pickup:'Free',score:4.8},
+    {name:'GreenCycle Recyclers',type:'Recycler',dist:'1.2 km',pickup:'Paid',score:4.6},
+    {name:'FixIt Repair Hub',type:'Repair',dist:'3.4 km',pickup:'Free',score:4.4},
+    {name:'Donate4Good NGO',type:'Donation',dist:'1.8 km',pickup:'Free',score:4.7}
+  ];
+
+  function populateMatches(pick){
+    const holder = document.getElementById('matchesList'); if(!holder) return;
+    holder.innerHTML='';
+    const filtered = sampleMatches.filter(m=>{
+      if(pick==='SELL') return m.type==='Buyer';
+      if(pick==='DONATE') return m.type==='Donation';
+      if(pick==='RECYCLE') return m.type==='Recycler';
+      return true;
+    });
+    const list = filtered.length?filtered:sampleMatches.slice(0,3);
+    list.forEach(m=>{
+      const div = document.createElement('div'); div.className='match';
+      div.innerHTML=`<div class='avatar'>${m.name.split(' ').map(s=>s[0]).slice(0,2).join('')}</div><div style='flex:1'><strong>${m.name}</strong><div class='muted'>${m.type} • ${m.dist} • ${m.pickup}</div></div><div style='text-align:right'><div style='font-weight:800'>${m.score}</div><div style='margin-top:6px'><button class='btn' onclick="alert('Contacting ${m.name} (mock)')">Contact</button></div></div>`;
+      holder.appendChild(div);
+    });
+    const mc = document.getElementById('matchCards'); if(mc){mc.innerHTML='';list.forEach(m=>{const c=document.createElement('div');c.className='card';c.style.marginTop='8px';c.innerHTML=`<strong>${m.name}</strong><div class='muted'>${m.type} • ${m.dist}</div><div style='margin-top:6px'><button class='btn' onclick="alert('View ${m.name} (mock)')">View</button></div>`;mc.appendChild(c)})}
+  }
+
+  function openMatches(){ location.hash='matches'; populateMatches('SELL'); }
+
+  // --- Pickup form & storage ---
+  function openPickupForm(){ location.hash='pickup'; }
+
+  function handlePickup(){
+    const name = document.getElementById('pName').value;
+    const phone = document.getElementById('pPhone').value;
+    const addr = document.getElementById('pAddress').value;
+    const date = document.getElementById('pDate').value;
+    if(!name||!phone||!addr||!date){alert('Please complete the form');return}
+    const pts = 120; const co = 2.1; // mock values
+    window.state.ecoPoints = Number(window.state.ecoPoints||0) + pts;
+    window.state.co2 = Number(window.state.co2||0) + co;
+    safeSet('ecoPoints',window.state.ecoPoints); safeSet('co2',window.state.co2);
+    updateRewardsDisplay();
+    const pickups = safeGet('pickups',[]);
+    pickups.push({name,phone,addr,date,points:pts,co});
+    safeSet('pickups',pickups);
+    alert('Pickup confirmed! You earned '+pts+' EcoPoints.');
+    const form = document.getElementById('pickupForm'); if(form) form.reset();
+    location.hash='rewards';
+  }
+
+  // --- Rewards & badges ---
+  function updateRewardsDisplay(){ const ep = Number(window.state.ecoPoints||0); const co = Number(window.state.co2||0); const epEl = document.getElementById('ecoPoints'); const coEl = document.getElementById('co2'); if(epEl) epEl.innerText = ep; if(coEl) coEl.innerText = (Math.round(co*10)/10).toFixed(1); renderBadges(); }
+  function renderBadges(){ const b = document.getElementById('badges'); if(!b) return; b.innerHTML=''; const pts = Number(window.state.ecoPoints||0); if(pts>=1000){ addBadge('Landfill Slayer') } else if(pts>=500){ addBadge('Repair Warrior') } else if(pts>=100){ addBadge('Zero Waste Beginner') } else addBadge('New Recycler') }
+  function addBadge(name){ const b=document.createElement('div'); b.style.padding='8px 10px'; b.style.borderRadius='10px'; b.style.background='#f1fff7'; b.style.border='1px solid rgba(31,166,122,0.08)'; b.innerText=name; document.getElementById('badges').appendChild(b) }
+
+  function redeemPoints(){ const pts = Number(window.state.ecoPoints||0); if(pts<50){alert('You need at least 50 points to redeem (mock).');return} alert('Redeem flow (mock).'); }
+
+  // --- Navigation ---
+  function navTo(id,btn){ location.hash=id; document.querySelectorAll('.bbtn').forEach(x=>x.classList.remove('active')); if(btn) btn.classList.add('active'); const target = document.getElementById(id); if(target) target.scrollIntoView({behavior:'smooth',block:'start'}); }
+
+  // --- Download current site as single HTML file ---
+  function downloadSite(){
+    try{
+      const docHtml = document.documentElement.outerHTML;
+      const content = '<!doctype html>\n' + docHtml;
+      const blob = new Blob([content],{type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'ecoloop_prototype.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }catch(e){alert('Download failed: '+e.message)}
+  }
+
+</script>
+<script>
+function toggleTheme(){document.body.classList.toggle('dark');
+localStorage.setItem('theme',document.body.classList.contains('dark')?'dark':'light');
+}
+if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark');
+</script>
+</body>
+</html>
